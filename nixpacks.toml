@@ -1,0 +1,18 @@
+# Explicit Nixpacks config — overrides Railway's auto-detection.
+# Without this, Nixpacks misdetects this TanStack Start SSR app as a static
+# SPA site, adds a Caddy phase, and produces a build that doesn't run the
+# Nitro Node server (resulting in MODULE_NOT_FOUND / 404 at runtime).
+
+providers = ["node"]
+
+[phases.setup]
+nixPkgs = ["nodejs_20", "bun"]
+
+[phases.install]
+cmds = ["bun i --no-save"]
+
+[phases.build]
+cmds = ["bun run build"]
+
+[start]
+cmd = "node .output/server/index.mjs"
