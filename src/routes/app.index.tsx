@@ -1,46 +1,41 @@
-import { createFileRoute } from "@tanstack/react-router";
-import { Image, Wand2, Clock, Zap } from "lucide-react";
+import { createFileRoute, Link } from "@tanstack/react-router";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Sparkles, Sun, Wand2, Eraser, ImagePlus, History } from "lucide-react";
 
-export const Route = createFileRoute("/app/")({
-  component: Dashboard,
-});
+export const Route = createFileRoute("/app/")({ component: Dashboard });
 
-const quickTools = [
-  { label: "Image Generation", desc: "Create images from text", icon: Image, href: "/app/tools/image-generation" },
-  { label: "Upscaler", desc: "Enhance image resolution", icon: Zap, href: "/app/tools/upscaler" },
-  { label: "Reimagine", desc: "Transform existing images", icon: Wand2, href: "/app/tools/reimagine" },
-  { label: "History", desc: "View past creations", icon: Clock, href: "/app/history" },
+const cards = [
+  { title: "Upscaler", desc: "Upscale & enhance images", url: "/app/tools/upscaler", icon: Sparkles },
+  { title: "Relight", desc: "AI relighting", url: "/app/tools/relight", icon: Sun },
+  { title: "Generative Fill", desc: "AI-powered fill", url: "/app/tools/generative-fill", icon: Wand2 },
+  { title: "Eraser", desc: "Remove objects", url: "/app/tools/eraser", icon: Eraser },
+  { title: "Style Transfer", desc: "Transfer visual styles", url: "/app/tools/style-transfer", icon: Sparkles },
+  { title: "Image Generation", desc: "Text to image", url: "/app/tools/image-generation", icon: ImagePlus },
+  { title: "History", desc: "All previous jobs", url: "/app/history", icon: History },
 ];
 
 function Dashboard() {
   return (
-    <div className="p-8 max-w-5xl mx-auto">
-      <div className="mb-8">
-        <h1 className="text-3xl font-bold text-foreground mb-2">Welcome back</h1>
-        <p className="text-muted-foreground">What will you create today?</p>
+    <div className="p-8 space-y-8">
+      <div>
+        <h2 className="text-4xl font-bold tracking-tight">Welcome to Magnific Studio</h2>
+        <p className="text-muted-foreground mt-1">Pick a tool to start creating</p>
       </div>
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        {quickTools.map(({ label, desc, icon: Icon, href }) => (
-          <a
-            key={label}
-            href={href}
-            className="group flex flex-col gap-3 p-5 rounded-xl bg-card border border-border hover:border-primary/50 hover:bg-card/80 transition-all"
-          >
-            <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center group-hover:bg-primary/20 transition-colors">
-              <Icon className="w-5 h-5 text-primary" />
-            </div>
-            <div>
-              <p className="text-sm font-medium text-foreground">{label}</p>
-              <p className="text-xs text-muted-foreground mt-0.5">{desc}</p>
-            </div>
-          </a>
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        {cards.map((c) => (
+          <Link key={c.url} to={c.url}>
+            <Card className="hover:border-primary/50 hover:shadow-xl hover:-translate-y-0.5 transition-all cursor-pointer h-full bg-card/60">
+              <CardHeader>
+                <div className="size-11 rounded-xl flex items-center justify-center mb-2 text-white" style={{ background: "var(--gradient-primary)" }}>
+                  <c.icon className="h-5 w-5" />
+                </div>
+                <CardTitle className="text-lg">{c.title}</CardTitle>
+                <CardDescription>{c.desc}</CardDescription>
+              </CardHeader>
+              <CardContent />
+            </Card>
+          </Link>
         ))}
-      </div>
-      <div className="mt-10">
-        <h2 className="text-lg font-semibold text-foreground mb-4">Recent creations</h2>
-        <div className="rounded-xl border border-border bg-card p-8 text-center text-muted-foreground text-sm">
-          No creations yet. Start with a tool above!
-        </div>
       </div>
     </div>
   );

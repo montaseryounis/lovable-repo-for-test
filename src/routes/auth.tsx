@@ -1,83 +1,112 @@
-import { createFileRoute } from "@tanstack/react-router";
-import { useState } from "react";
+import { createFileRoute, useNavigate, redirect } from "@tanstack/react-router";
+import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { toast } from "sonner";
 
 export const Route = createFileRoute("/auth")({
+  ssr: false,
+  head: () => ({ meta: [{ title: "Sign in — Design Studio" }] }),
+  beforeLoad: async () => {
+    const { data } = await supabase.auth.getSession();
+    if (data.session) throw redirect({ to: "/app" });
+  },
   component: AuthPage,
 });
 
 function AuthPage() {
+  const navigate = useNavigate();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [mode, setMode] = useState<"signin" | "signup">("signin");
-  const [error, setError] = useState<string | null>(null);
+  const [fullName, setFullName] = useState("");
   const [loading, setLoading] = useState(false);
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  useEffect(() => {
+    const { data: sub } = supabase.auth.onAuthStateChange((_e, s) => {
+      if (s) navigate({ to: "/app", replace: true });
+    });
+    return () => sub.subscription.unsubscribe();
+  }, [navigate]);
+
+  const signIn = async (e: React.FormEvent) => {
     e.preventDefault();
-    setError(null);
     setLoading(true);
-    try {
-      if (mode === "signin") {
-        const { error } = await supabase.auth.signInWithPassword({ email, password });
-        if (error) throw error;
-      } else {
-        const { error } = await supabase.auth.signUp({ email, password });
-        if (error) throw error;
-      }
-      window.location.href = "/app";
-    } catch (err: unknown) {
-      setError(err instanceof Error ? err.message : "An error occurred");
-    } finally {
-      setLoading(false);
-    }
+    const { error } = await supabase.auth.signInWithPassword({ email, password });
+    setLoading(false);
+    if (error) return toast.error(error.message);
+    toast.success("Welcome back");
+  };
+
+  const signUp = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setLoading(true);
+    const { error } = await supabase.auth.signUp({
+      email,
+      password,
+      options: {
+        emailRedirectTo: `${window.location.origin}/app`,
+        data: { full_name: fullName },
+      },
+    });
+    setLoading(false);
+    if (error) return toast.error(error.message);
+    toast.success("Account created — check your email");
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-background">
-      <div className="w-full max-w-sm p-8 bg-card rounded-xl border border-border shadow-lg">
-        <h1 className="text-2xl font-bold text-foreground mb-2">
-          {mode === "signin" ? "Sign in" : "Create account"}
-        </h1>
-        <p className="text-muted-foreground text-sm mb-6">
-          {mode === "signin" ? "Welcome back to Studio" : "Get started with Studio"}
-        </p>
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <input
-            type="email"
-            placeholder="Email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            required
-            className="w-full px-3 py-2 rounded-md bg-input border border-border text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring text-sm"
-          />
-          <input
-            type="password"
-            placeholder="Password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            required
-            className="w-full px-3 py-2 rounded-md bg-input border border-border text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring text-sm"
-          />
-          {error && <p className="text-destructive text-sm">{error}</p>}
-          <button
-            type="submit"
-            disabled={loading}
-            className="w-full py-2 px-4 rounded-md bg-primary text-primary-foreground font-medium text-sm hover:opacity-90 transition-opacity disabled:opacity-50"
-          >
-            {loading ? "Loading…" : mode === "signin" ? "Sign in" : "Sign up"}
-          </button>
-        </form>
-        <p className="text-center text-sm text-muted-foreground mt-4">
-          {mode === "signin" ? "Don't have an account?" : "Already have an account?"}{" "}
-          <button
-            onClick={() => setMode(mode === "signin" ? "signup" : "signin")}
-            className="text-primary hover:underline"
-          >
-            {mode === "signin" ? "Sign up" : "Sign in"}
-          </button>
-        </p>
-      </div>
+    <div className="min-h-screen w-full flex items-center justify-center bg-gradient-to-br from-background via-background to-primary/10 p-4">
+      <Card className="w-full max-w-md">
+        <CardHeader className="text-center">
+          <CardTitle className="text-2xl">Design Studio</CardTitle>
+          <CardDescription>The unified platform for design teams</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <Tabs defaultValue="signin">
+            <TabsList className="grid grid-cols-2 w-full">
+              <TabsTrigger value="signin">Sign in</TabsTrigger>
+              <TabsTrigger value="signup">Sign up</TabsTrigger>
+            </TabsList>
+            <TabsContent value="signin">
+              <form onSubmit={signIn} className="space-y-4 mt-4">
+                <div className="space-y-2">
+                  <Label>Email</Label>
+                  <Input type="email" value={email} onChange={(e) => setEmail(e.target.value)} required />
+                </div>
+                <div className="space-y-2">
+                  <Label>Password</Label>
+                  <Input type="password" value={password} onChange={(e) => setPassword(e.target.value)} required />
+                </div>
+                <Button type="submit" className="w-full" disabled={loading}>
+                  {loading ? "..." : "Sign in"}
+                </Button>
+              </form>
+            </TabsContent>
+            <TabsContent value="signup">
+              <form onSubmit={signUp} className="space-y-4 mt-4">
+                <div className="space-y-2">
+                  <Label>Full name</Label>
+                  <Input value={fullName} onChange={(e) => setFullName(e.target.value)} required />
+                </div>
+                <div className="space-y-2">
+                  <Label>Email</Label>
+                  <Input type="email" value={email} onChange={(e) => setEmail(e.target.value)} required />
+                </div>
+                <div className="space-y-2">
+                  <Label>Password</Label>
+                  <Input type="password" minLength={6} value={password} onChange={(e) => setPassword(e.target.value)} required />
+                </div>
+                <Button type="submit" className="w-full" disabled={loading}>
+                  {loading ? "..." : "Create account"}
+                </Button>
+              </form>
+            </TabsContent>
+          </Tabs>
+        </CardContent>
+      </Card>
     </div>
   );
 }
