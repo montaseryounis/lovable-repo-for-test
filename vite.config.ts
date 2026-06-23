@@ -11,7 +11,7 @@ export default defineConfig({
     // Redirect TanStack Start's bundled server entry to src/server.ts (our SSR error wrapper).
     // nitro/vite builds from this
     server: { entry: "server" },
-    // Force-enable Nitro SSR deploy on non-Lovable platforms (e.g. Railway)
-    nitro: true,
+    // Force-enable Nitro SSR with node-server preset for Railway (non-Lovable platforms)
+    nitro: { preset: "node-server" },
   },
 });
