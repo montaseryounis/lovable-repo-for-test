@@ -1,0 +1,13 @@
+ALTER TYPE public.tool_kind ADD VALUE IF NOT EXISTS 'precision_upscaler_v2';
+ALTER TYPE public.tool_kind ADD VALUE IF NOT EXISTS 'remove_background';
+ALTER TYPE public.tool_kind ADD VALUE IF NOT EXISTS 'image_expand';
+ALTER TYPE public.tool_kind ADD VALUE IF NOT EXISTS 'flux_kontext_pro';
+ALTER TYPE public.tool_kind ADD VALUE IF NOT EXISTS 'flux_2_pro';
+ALTER TYPE public.tool_kind ADD VALUE IF NOT EXISTS 'flux_2_turbo';
+ALTER TYPE public.tool_kind ADD VALUE IF NOT EXISTS 'flux_2_klein';
+ALTER TYPE public.tool_kind ADD VALUE IF NOT EXISTS 'seedream_4';
+ALTER TYPE public.tool_kind ADD VALUE IF NOT EXISTS 'seedream_4_5';
+ALTER TYPE public.tool_kind ADD VALUE IF NOT EXISTS 'seedream_4_5_edit';
+ALTER TYPE public.tool_kind ADD VALUE IF NOT EXISTS 'z_image_turbo';
+ALTER TYPE public.tool_kind ADD VALUE IF NOT EXISTS 'reimagine_flux';
+ALTER TYPE public.tool_kind ADD VALUE IF NOT EXISTS 'runway_t2i';
