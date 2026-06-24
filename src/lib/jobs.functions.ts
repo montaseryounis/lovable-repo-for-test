@@ -65,16 +65,17 @@ function magnificPath(tool: string): { path: string; method: "POST" } {
     case "flux_2_klein":
       return { path: "/ai/text-to-image/flux-2-klein", method: "POST" };
     case "seedream_4":
-      return { path: "/ai/text-to-image/seedream-4", method: "POST" };
+      return { path: "/ai/text-to-image/seedream-v4", method: "POST" };
     case "seedream_4_5":
       return { path: "/ai/text-to-image/seedream-v4-5", method: "POST" };
     case "seedream_4_5_edit":
     case "generative_fill":
       return { path: "/ai/text-to-image/seedream-v4-5-edit", method: "POST" };
     case "z_image_turbo":
-      return { path: "/ai/text-to-image/z-image-turbo", method: "POST" };
+      return { path: "/ai/text-to-image/z-image", method: "POST" };
     case "reimagine_flux":
-      return { path: "/ai/text-to-image/reimagine-flux", method: "POST" };
+      // Beta + synchronous endpoint (returns the image immediately, no task_id).
+      return { path: "/ai/beta/text-to-image/reimagine-flux", method: "POST" };
     case "runway_t2i":
       return { path: "/ai/text-to-image/runway", method: "POST" };
     case "image_generation":
@@ -145,11 +146,20 @@ export const createJob = createServerFn({ method: "POST" })
 
     try {
       const { path, method } = magnificPath(data.tool);
+      // Synchronous Magnific endpoints return the result immediately (no task_id):
+      // remove-background (beta) and reimagine-flux (beta).
+      const isSync = path.includes("/beta/");
+
       let body: Record<string, unknown> = {
         ...(data.params ?? {}),
       };
       if (data.prompt) body.prompt = data.prompt;
-      if (data.input_url) body.image = data.input_url;
+      if (data.input_url) {
+        // Per-endpoint input image field name.
+        if (path === "/ai/beta/remove-background") body.image_url = data.input_url;
+        else if (path === "/ai/text-to-image/flux-kontext-pro") body.input_image = data.input_url;
+        else body.image = data.input_url;
+      }
       if (path === "/ai/mystic") body = normalizeMysticBody(body);
 
       const res = await fetch(`${MAGNIFIC_BASE}${path}`, {
@@ -162,14 +172,36 @@ export const createJob = createServerFn({ method: "POST" })
         body: JSON.stringify(body),
       });
       const payload = (await res.json().catch(() => ({}))) as {
-        data?: { task_id?: string; status?: string; generated?: string[] };
+        data?: {
+          task_id?: string;
+          status?: string;
+          generated?: string[];
+          url?: string;
+          high_resolution?: string;
+        };
+        url?: string;
+        high_resolution?: string;
+        generated?: string[];
       };
-      const taskId = payload?.data?.task_id ?? null;
-      await supabase.from("jobs").update({
-        status: res.ok && taskId ? "processing" : "failed",
-        magnific_request_id: taskId,
-        error_message: res.ok ? null : JSON.stringify(payload).slice(0, 500),
-      }).eq("id", job.id);
+
+      if (isSync) {
+        // Result is available right away — pull the output URL from the response.
+        const d = payload?.data ?? payload;
+        const outputUrl =
+          d?.high_resolution || d?.url || d?.generated?.[0] || null;
+        await supabase.from("jobs").update({
+          status: res.ok && outputUrl ? "completed" : "failed",
+          output_url: outputUrl,
+          error_message: res.ok && outputUrl ? null : JSON.stringify(payload).slice(0, 500),
+        }).eq("id", job.id);
+      } else {
+        const taskId = payload?.data?.task_id ?? null;
+        await supabase.from("jobs").update({
+          status: res.ok && taskId ? "processing" : "failed",
+          magnific_request_id: taskId,
+          error_message: res.ok ? null : JSON.stringify(payload).slice(0, 500),
+        }).eq("id", job.id);
+      }
     } catch (e) {
       await supabase.from("jobs").update({
         status: "failed",
