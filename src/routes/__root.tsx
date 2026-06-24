@@ -11,6 +11,7 @@ import { useEffect, type ReactNode } from "react";
 
 import appCss from "../styles.css?url";
 import { reportLovableError } from "../lib/lovable-error-reporting";
+import { Toaster } from "@/components/ui/sonner";
 
 function NotFoundComponent() {
   return (
@@ -120,6 +121,10 @@ function RootComponent() {
     <QueryClientProvider client={queryClient}>
       {/* Required: nested routes render here. Removing <Outlet /> breaks all child routes. */}
       <Outlet />
+      {/* Global toast host — also covers /auth, which is not wrapped by app-shell.
+          Without this, sign-in/sign-up success & error toasts render nowhere
+          and the buttons appear to "do nothing". */}
+      <Toaster />
     </QueryClientProvider>
   );
 }
