@@ -58,12 +58,19 @@ export const generateImageWithLovableAI = createServerFn({ method: "POST" })
     if (jobErr) throw new Error(jobErr.message);
 
     try {
-      const engine = VALID_ENGINES.has(data.model) ? data.model : "realism";
+      const model = VALID_ENGINES.has(data.model) ? data.model : "realism";
+      // Map UI quality → Mystic resolution. Mystic accepts 1k | 2k | 4k.
+      const resolution =
+        data.quality === "high" ? "4k" : data.quality === "medium" ? "2k" : "1k";
+      // Mystic body — only documented fields. NOTE: `num_images` is NOT a valid
+      // Mystic parameter; Freepik/Magnific rejects unknown fields.
       const body: Record<string, unknown> = {
         prompt: data.prompt,
-        model: engine,
+        model,
+        engine: "automatic",
         aspect_ratio: ASPECT_MAP[data.aspect_ratio ?? "1:1"] ?? "square_1_1",
-        num_images: 1,
+        resolution,
+        filter_nsfw: true,
       };
 
       const headers = {
@@ -85,9 +92,12 @@ export const generateImageWithLovableAI = createServerFn({ method: "POST" })
       const payload = (await res.json().catch(() => ({}))) as {
         data?: { task_id?: string; status?: string; generated?: string[] };
         error?: { message?: string };
+        message?: string;
       };
       if (!res.ok) {
-        throw new Error(payload?.error?.message || `Magnific error ${res.status}`);
+        const detail =
+          payload?.error?.message || payload?.message || JSON.stringify(payload).slice(0, 300);
+        throw new Error(`Magnific error ${res.status}: ${detail}`);
       }
 
       const taskId = payload?.data?.task_id;
