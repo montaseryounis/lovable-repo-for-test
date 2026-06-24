@@ -162,14 +162,27 @@ export const createJob = createServerFn({ method: "POST" })
       }
       if (path === "/ai/mystic") body = normalizeMysticBody(body);
 
+      // The beta remove-background endpoint is form-based, not JSON: it expects
+      // application/x-www-form-urlencoded (returns 400 "no Content-Type / forms
+      // only" otherwise).
+      const isForm = path === "/ai/beta/remove-background";
       const res = await fetch(`${MAGNIFIC_BASE}${path}`, {
         method,
         headers: {
           "x-magnific-api-key": apiKey,
-          "Content-Type": "application/json",
+          "Content-Type": isForm
+            ? "application/x-www-form-urlencoded"
+            : "application/json",
           Accept: "application/json",
         },
-        body: JSON.stringify(body),
+        body: isForm
+          ? new URLSearchParams(
+              Object.entries(body).reduce<Record<string, string>>((acc, [k, v]) => {
+                if (v != null) acc[k] = String(v);
+                return acc;
+              }, {}),
+            ).toString()
+          : JSON.stringify(body),
       });
       const payload = (await res.json().catch(() => ({}))) as {
         data?: {
