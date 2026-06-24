@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { ComingSoon } from "@/components/coming-soon";
+import { ImageStudio } from "@/components/image-studio";
 
 export const Route = createFileRoute("/app/tools/voice")({
-  component: () => <ComingSoon title="Voice Generator" description="Generate natural-sounding voices from text." />,
+  component: () => <ImageStudio initialRail="audio" />,
 });
