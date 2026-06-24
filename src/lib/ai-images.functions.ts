@@ -11,61 +11,53 @@ type ModelDef =
   | { kind: "mystic"; engine: "realism" | "fluid" | "zen" }
   | { kind: "t2i"; path: string; plainAspect?: boolean; resolution?: boolean };
 
-// Model registry. The key is the `id` the UI sends.
+// Model registry. The key is the `id` the UI sends — for text-to-image models
+// it matches the Magnific/Freepik REST slug under /ai/text-to-image/<slug>.
 const MODELS: Record<string, ModelDef> = {
   realism: { kind: "mystic", engine: "realism" },
   fluid: { kind: "mystic", engine: "fluid" },
   zen: { kind: "mystic", engine: "zen" },
-  "flux-2-pro": { kind: "t2i", path: "/ai/text-to-image/flux-2-pro" },
+  // Google models: plain aspect-ratio values ("16:9"); Nano Banana Pro variants
+  // also accept a resolution.
+  "nano-banana-pro": {
+    kind: "t2i",
+    path: "/ai/text-to-image/nano-banana-pro",
+    plainAspect: true,
+    resolution: true,
+  },
+  "nano-banana-pro-flash": {
+    kind: "t2i",
+    path: "/ai/text-to-image/nano-banana-pro-flash",
+    plainAspect: true,
+    resolution: true,
+  },
+  "nano-banana": { kind: "t2i", path: "/ai/text-to-image/nano-banana", plainAspect: true },
+  imagen3: { kind: "t2i", path: "/ai/text-to-image/imagen3", plainAspect: true },
+  // Flux / Seedream / others use the Magnific aspect_ratio enum.
   "flux-2-turbo": { kind: "t2i", path: "/ai/text-to-image/flux-2-turbo" },
-  "flux-2-klein": { kind: "t2i", path: "/ai/text-to-image/flux-2-klein" },
+  "flux-pro-v1-1": { kind: "t2i", path: "/ai/text-to-image/flux-pro-v1-1" },
+  "flux-dev": { kind: "t2i", path: "/ai/text-to-image/flux-dev" },
   "seedream-v4": { kind: "t2i", path: "/ai/text-to-image/seedream-v4" },
   "seedream-v4-5": { kind: "t2i", path: "/ai/text-to-image/seedream-v4-5" },
   "z-image": { kind: "t2i", path: "/ai/text-to-image/z-image" },
   runway: { kind: "t2i", path: "/ai/text-to-image/runway" },
-  // Google models use plain aspect-ratio values ("16:9") rather than the
-  // Mystic enum, and Nano Banana 2 / Pro also accept a resolution.
-  "imagen-nano-banana-2": {
-    kind: "t2i",
-    path: "/ai/text-to-image/imagen-nano-banana-2",
-    plainAspect: true,
-    resolution: true,
-  },
-  "imagen-nano-banana-2-flash": {
-    kind: "t2i",
-    path: "/ai/text-to-image/imagen-nano-banana-2-flash",
-    plainAspect: true,
-    resolution: true,
-  },
-  "imagen-nano-banana": {
-    kind: "t2i",
-    path: "/ai/text-to-image/imagen-nano-banana",
-    plainAspect: true,
-  },
-  "imagen4-ultra": { kind: "t2i", path: "/ai/text-to-image/imagen4-ultra", plainAspect: true },
-  imagen4: { kind: "t2i", path: "/ai/text-to-image/imagen4", plainAspect: true },
-  "imagen4-fast": { kind: "t2i", path: "/ai/text-to-image/imagen4-fast", plainAspect: true },
-  imagen3: { kind: "t2i", path: "/ai/text-to-image/imagen3", plainAspect: true },
 };
 
 // Shown in the studio's model dropdown.
 export const LOVABLE_IMAGE_MODELS = [
-  { id: "imagen-nano-banana-2", name: "Google Nano Banana Pro", badge: "SOTA" },
-  { id: "imagen-nano-banana-2-flash", name: "Google Nano Banana 2", badge: "Fast" },
-  { id: "imagen-nano-banana", name: "Google Nano Banana" },
+  { id: "nano-banana-pro", name: "Google Nano Banana Pro", badge: "SOTA" },
+  { id: "nano-banana-pro-flash", name: "Google Nano Banana Pro Flash", badge: "Fast" },
+  { id: "nano-banana", name: "Google Nano Banana" },
+  { id: "imagen3", name: "Google Imagen 3" },
   { id: "realism", name: "Mystic Realism", badge: "Default" },
   { id: "fluid", name: "Mystic Fluid", badge: "Cinematic" },
   { id: "zen", name: "Mystic Zen", badge: "Clean" },
-  { id: "flux-2-pro", name: "Flux 2 Pro", badge: "Quality" },
   { id: "flux-2-turbo", name: "Flux 2 Turbo", badge: "Fast" },
-  { id: "flux-2-klein", name: "Flux 2 Klein" },
+  { id: "flux-pro-v1-1", name: "Flux 1.1 Pro" },
+  { id: "flux-dev", name: "Flux Dev" },
   { id: "seedream-v4", name: "Seedream 4" },
   { id: "seedream-v4-5", name: "Seedream 4.5" },
   { id: "z-image", name: "Z-Image Turbo", badge: "Fast" },
-  { id: "imagen4-ultra", name: "Google Imagen 4 Ultra" },
-  { id: "imagen4", name: "Google Imagen 4" },
-  { id: "imagen4-fast", name: "Google Imagen 4 Fast" },
-  { id: "imagen3", name: "Google Imagen 3" },
   { id: "runway", name: "Runway" },
 ] as const;
 
