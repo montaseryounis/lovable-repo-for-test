@@ -30,21 +30,21 @@ type Item = { title: string; url: string; icon: ComponentType<SVGProps<SVGSVGEle
 const rail: Item[] = [
   { title: "Create", url: "/app/tools/image-generation", icon: Plus },
   { title: "Home", url: "/app", icon: Home },
-  { title: "Search", url: "/app/library", icon: Search },
   { title: "Explore", url: "/app/explore", icon: Compass },
   { title: "Projects", url: "/app/history", icon: FolderOpen },
   { title: "Library", url: "/app/library", icon: Library },
 ];
 
-const generators: Item[] = [
-  { title: "Spaces", url: "/app/spaces", icon: Layers },
-  { title: "Image Generator", url: "/app/tools/image-generation", icon: ImageIcon },
+// 1) Create — generation studio + spaces
+const create: Item[] = [
+  { title: "Image Studio", url: "/app/tools/image-generation", icon: ImageIcon },
   { title: "Video Generator", url: "/app/tools/video", icon: Video },
   { title: "Voice Generator", url: "/app/tools/voice", icon: Mic },
-  { title: "AI Assistant", url: "/app/assistant", icon: Bot },
+  { title: "Spaces", url: "/app/spaces", icon: Layers },
 ];
 
-const tools: Item[] = [
+// 2) Edit & Enhance — the dedicated single-purpose image tools
+const editTools: Item[] = [
   { title: "Upscaler", url: "/app/tools/upscaler", icon: Sparkles },
   { title: "Relight", url: "/app/tools/relight", icon: Sun },
   { title: "Generative Fill", url: "/app/tools/generative-fill", icon: Wand2 },
@@ -61,8 +61,16 @@ const tools: Item[] = [
   { title: "RunWay T2I", url: "/app/tools/runway", icon: Sparkles },
 ];
 
-const account: Item[] = [
+// 3) Workspace — browse & manage your stuff
+const workspace: Item[] = [
+  { title: "Library", url: "/app/library", icon: Library },
   { title: "History", url: "/app/history", icon: History },
+  { title: "Explore", url: "/app/explore", icon: Compass },
+  { title: "Prompt Assistant", url: "/app/assistant", icon: Bot },
+];
+
+// 4) Account
+const account: Item[] = [
   { title: "Analytics", url: "/app/analytics", icon: BarChart3 },
   { title: "User Management", url: "/app/admin", icon: Shield },
 ];
@@ -105,8 +113,9 @@ export function AppSidebar() {
           <span className="font-bold tracking-tight">Magnific</span>
         </div>
 
-        <Section title="Generate" items={generators} isActive={isActive} />
-        <Section title="Tools" items={tools} isActive={isActive} />
+        <Section title="Create" items={create} isActive={isActive} />
+        <Section title="Edit & Enhance" items={editTools} isActive={isActive} />
+        <Section title="Workspace" items={workspace} isActive={isActive} />
         <Section title="Account" items={account} isActive={isActive} />
 
         <div className="mt-auto pt-4">
