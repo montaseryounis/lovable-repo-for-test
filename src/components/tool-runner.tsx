@@ -1,14 +1,14 @@
 import { useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
-import { useMutation } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
-import { createJob } from "@/lib/jobs.functions";
-import { Upload, Loader2, ImageIcon } from "lucide-react";
+import { createJob, pollJob } from "@/lib/jobs.functions";
+import { Upload, Loader2, ImageIcon, Download } from "lucide-react";
 
 type ToolName =
   | "upscaler" | "precision_upscaler" | "precision_upscaler_v2"
@@ -33,14 +33,37 @@ export function ToolRunner({ tool, title, description, requiresImage = true, pro
   const [inputUrl, setInputUrl] = useState<string | null>(null);
   const [prompt, setPrompt] = useState("");
   const [uploading, setUploading] = useState(false);
+  const [jobId, setJobId] = useState<string | null>(null);
   const runFn = useServerFn(createJob);
+  const pollFn = useServerFn(pollJob);
+  const qc = useQueryClient();
 
   const mutation = useMutation({
     mutationFn: async () =>
       runFn({ data: { tool, prompt: prompt || null, input_url: inputUrl, params: {} } }),
-    onSuccess: () => toast.success("Job created"),
+    onSuccess: (r) => {
+      setJobId(r.jobId);
+      qc.invalidateQueries({ queryKey: ["jobs"] });
+      toast.success("Job started");
+    },
     onError: (e: Error) => toast.error(e.message),
   });
+
+  // Poll the job until it finishes.
+  const pollQ = useQuery({
+    queryKey: ["job", jobId],
+    queryFn: () => pollFn({ data: { jobId: jobId! } }),
+    enabled: !!jobId,
+    refetchInterval: (q) => {
+      const s = q.state.data?.status;
+      return s === "completed" || s === "failed" ? false : 2500;
+    },
+  });
+
+  const status = pollQ.data?.status;
+  const outputUrl = pollQ.data?.output_url ?? null;
+  const jobError = pollQ.data?.error ?? null;
+  const isRunning = mutation.isPending || (!!jobId && status !== "completed" && status !== "failed");
 
   const onFile = async (f: File) => {
     setPreviewUrl(URL.createObjectURL(f));
@@ -93,25 +116,37 @@ export function ToolRunner({ tool, title, description, requiresImage = true, pro
                 onChange={(e) => setPrompt(e.target.value)} rows={4} />
             </div>
             <Button className="w-full" size="lg"
-              disabled={mutation.isPending || uploading || (requiresImage && !inputUrl) || (!requiresImage && !prompt)}
+              disabled={isRunning || uploading || (requiresImage && !inputUrl) || (!requiresImage && !prompt)}
               onClick={() => mutation.mutate()}>
-              {mutation.isPending ? (<><Loader2 className="h-4 w-4 animate-spin mr-2" /> Processing</>) : "Start"}
+              {isRunning ? (<><Loader2 className="h-4 w-4 animate-spin mr-2" /> Processing</>) : "Start"}
             </Button>
           </CardContent>
         </Card>
         <Card>
           <CardHeader>
             <CardTitle>Result</CardTitle>
-            <CardDescription>Will appear here after processing (track progress in History)</CardDescription>
+            <CardDescription>
+              {status === "completed" ? "Done" : status === "failed" ? "Failed" : isRunning ? "Processing…" : "Appears here after processing"}
+            </CardDescription>
           </CardHeader>
           <CardContent>
-            <div className="aspect-square rounded-lg border bg-muted/30 flex items-center justify-center">
-              <ImageIcon className="h-12 w-12 text-muted-foreground/50" />
+            <div className="aspect-square rounded-lg border bg-muted/30 flex items-center justify-center overflow-hidden relative">
+              {outputUrl ? (
+                <img src={outputUrl} alt="result" className="w-full h-full object-contain" />
+              ) : isRunning ? (
+                <Loader2 className="h-8 w-8 animate-spin text-primary" />
+              ) : jobError ? (
+                <p className="text-sm text-destructive px-4 text-center">{jobError}</p>
+              ) : (
+                <ImageIcon className="h-12 w-12 text-muted-foreground/50" />
+              )}
             </div>
-            {mutation.data && (
-              <p className="text-xs text-muted-foreground mt-3">
-                Job #{mutation.data.jobId.slice(0, 8)}
-              </p>
+            {outputUrl && (
+              <a href={outputUrl} download target="_blank" rel="noreferrer" className="inline-block mt-3">
+                <Button variant="secondary" size="sm" className="gap-1.5">
+                  <Download className="h-3.5 w-3.5" /> Download
+                </Button>
+              </a>
             )}
           </CardContent>
         </Card>
