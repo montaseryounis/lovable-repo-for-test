@@ -23,13 +23,11 @@ const MODELS: Record<string, ModelDef> = {
     kind: "t2i",
     path: "/ai/text-to-image/nano-banana-pro",
     plainAspect: true,
-    resolution: true,
   },
   "nano-banana-pro-flash": {
     kind: "t2i",
     path: "/ai/text-to-image/nano-banana-pro-flash",
     plainAspect: true,
-    resolution: true,
   },
   "nano-banana": { kind: "t2i", path: "/ai/text-to-image/nano-banana", plainAspect: true },
   imagen3: { kind: "t2i", path: "/ai/text-to-image/imagen3", plainAspect: true },
@@ -160,8 +158,13 @@ export const generateImageWithLovableAI = createServerFn({ method: "POST" })
         message?: string;
       };
       if (!res.ok) {
+        // Surface the full payload so validation details (invalid_params, etc.)
+        // are visible rather than just a generic "Validation error".
         const detail =
-          payload?.error?.message || payload?.message || JSON.stringify(payload).slice(0, 300);
+          payload?.error?.message ||
+          (payload?.message && payload.message !== "Validation error"
+            ? payload.message
+            : JSON.stringify(payload).slice(0, 500));
         throw new Error(`Magnific error ${res.status}: ${detail}`);
       }
 
