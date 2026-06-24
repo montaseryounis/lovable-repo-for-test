@@ -9,7 +9,7 @@ import { z } from "zod";
 
 type ModelDef =
   | { kind: "mystic"; engine: "realism" | "fluid" | "zen" }
-  | { kind: "t2i"; path: string };
+  | { kind: "t2i"; path: string; plainAspect?: boolean; resolution?: boolean };
 
 // Model registry. The key is the `id` the UI sends.
 const MODELS: Record<string, ModelDef> = {
@@ -23,10 +23,36 @@ const MODELS: Record<string, ModelDef> = {
   "seedream-v4-5": { kind: "t2i", path: "/ai/text-to-image/seedream-v4-5" },
   "z-image": { kind: "t2i", path: "/ai/text-to-image/z-image" },
   runway: { kind: "t2i", path: "/ai/text-to-image/runway" },
+  // Google models use plain aspect-ratio values ("16:9") rather than the
+  // Mystic enum, and Nano Banana 2 / Pro also accept a resolution.
+  "imagen-nano-banana-2": {
+    kind: "t2i",
+    path: "/ai/text-to-image/imagen-nano-banana-2",
+    plainAspect: true,
+    resolution: true,
+  },
+  "imagen-nano-banana-2-flash": {
+    kind: "t2i",
+    path: "/ai/text-to-image/imagen-nano-banana-2-flash",
+    plainAspect: true,
+    resolution: true,
+  },
+  "imagen-nano-banana": {
+    kind: "t2i",
+    path: "/ai/text-to-image/imagen-nano-banana",
+    plainAspect: true,
+  },
+  "imagen4-ultra": { kind: "t2i", path: "/ai/text-to-image/imagen4-ultra", plainAspect: true },
+  imagen4: { kind: "t2i", path: "/ai/text-to-image/imagen4", plainAspect: true },
+  "imagen4-fast": { kind: "t2i", path: "/ai/text-to-image/imagen4-fast", plainAspect: true },
+  imagen3: { kind: "t2i", path: "/ai/text-to-image/imagen3", plainAspect: true },
 };
 
 // Shown in the studio's model dropdown.
 export const LOVABLE_IMAGE_MODELS = [
+  { id: "imagen-nano-banana-2", name: "Google Nano Banana Pro", badge: "SOTA" },
+  { id: "imagen-nano-banana-2-flash", name: "Google Nano Banana 2", badge: "Fast" },
+  { id: "imagen-nano-banana", name: "Google Nano Banana" },
   { id: "realism", name: "Mystic Realism", badge: "Default" },
   { id: "fluid", name: "Mystic Fluid", badge: "Cinematic" },
   { id: "zen", name: "Mystic Zen", badge: "Clean" },
@@ -36,6 +62,10 @@ export const LOVABLE_IMAGE_MODELS = [
   { id: "seedream-v4", name: "Seedream 4" },
   { id: "seedream-v4-5", name: "Seedream 4.5" },
   { id: "z-image", name: "Z-Image Turbo", badge: "Fast" },
+  { id: "imagen4-ultra", name: "Google Imagen 4 Ultra" },
+  { id: "imagen4", name: "Google Imagen 4" },
+  { id: "imagen4-fast", name: "Google Imagen 4 Fast" },
+  { id: "imagen3", name: "Google Imagen 3" },
   { id: "runway", name: "Runway" },
 ] as const;
 
@@ -104,7 +134,16 @@ export const generateImageWithLovableAI = createServerFn({ method: "POST" })
         };
       } else {
         path = model.path;
-        body = { prompt: data.prompt, aspect_ratio: aspect };
+        // Google/imagen models take plain ratios ("16:9"); the rest take the
+        // Magnific aspect_ratio enum ("widescreen_16_9").
+        body = {
+          prompt: data.prompt,
+          aspect_ratio: model.plainAspect ? (data.aspect_ratio ?? "1:1") : aspect,
+        };
+        if (model.resolution) {
+          body.resolution =
+            data.quality === "high" ? "4k" : data.quality === "medium" ? "2k" : "1k";
+        }
       }
 
       const headers = {
